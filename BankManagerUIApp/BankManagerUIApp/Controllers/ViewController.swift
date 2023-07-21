@@ -130,7 +130,7 @@ class ViewController: UIViewController {
             containerView.bottomAnchor.constraint(equalTo: contentScrollView.contentLayoutGuide.bottomAnchor),
             containerView.leadingAnchor.constraint(equalTo: contentScrollView.contentLayoutGuide.leadingAnchor),
             containerView.trailingAnchor.constraint(equalTo: contentScrollView.contentLayoutGuide.trailingAnchor),
-            containerView.widthAnchor.constraint(equalTo: contentScrollView.frameLayoutGuide.widthAnchor)
+            containerView.widthAnchor.constraint(equalTo: contentScrollView.frameLayoutGuide.widthAnchor, multiplier: 1)
         ])
     }
     
@@ -176,13 +176,16 @@ class ViewController: UIViewController {
         ])
     }
     
-    private func addNewLabel(customerName: String) {
+    private func addNewLabel(customerName: String, loan: Bool) {
         let newLabel = UILabel()
         newLabel.text = customerName
         newLabel.textColor = .black
         newLabel.font = UIFont.systemFont(ofSize: 20)
         newLabel.textAlignment = .center
         newLabel.translatesAutoresizingMaskIntoConstraints = false
+        if loan {
+            newLabel.textColor = .blue
+        }
         customerLabelStackView.addArrangedSubview(newLabel)
     }
     
@@ -192,12 +195,13 @@ class ViewController: UIViewController {
         }
         
         for _ in 1...10 {
-            guard let customer = bankService.getNextCustomer() else {
+            guard let customer = bankService.customerQueue.dequeue() else {
                 break
             }
             let customerNumber = bankService.getNextCustomerNumber()
             let customerInfo = "\(customerNumber) - \(customer.bankingWork.financialProductsName)"
-            addNewLabel(customerName: customerInfo)
+            let isLoan = customer.bankingWork == .loan
+            addNewLabel(customerName: customerInfo, loan: isLoan)
         }
     }
 

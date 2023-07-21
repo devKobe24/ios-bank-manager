@@ -50,9 +50,6 @@ struct BankService {
         }
     }
     
-    mutating func getNextCustomer() -> Customer? {
-        return customerQueue.dequeue()
-    }
     mutating func getNextCustomerNumber() -> Int {
         let customerNumber = nextCustomer
         nextCustomer += 1
