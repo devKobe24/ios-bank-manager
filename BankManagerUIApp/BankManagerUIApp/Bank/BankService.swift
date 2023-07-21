@@ -1,18 +1,20 @@
 //
 //  BankService.swift
-//  BankManagerConsoleApp
+//  BankManagerUIApp
 //
-//  Created by Kobe, Hemg on 2023/07/14.
+//  Created by 1 on 2023/07/21.
 //
 
 import Foundation
 
 struct BankService {
-    private var customerQueue: CustomerQueue
+    var customerQueue: CustomerQueue
     private var depositBankerQueue = OperationQueue()
     private var loanBankerQueue = OperationQueue()
     private var bankingServiceTime: Double = 0.0
     private var numberOfCustomers: Int
+    var processedCustomers: [Customer] = []
+    var nextCustomer: Int = 1
     
     init(numberOfCustomers: Int) {
         self.numberOfCustomers = numberOfCustomers
@@ -34,9 +36,7 @@ struct BankService {
                 switch menuChoice {
                 case 1:
                     print(BankManagerNameSpace.startBankingService)
-//                    print(Date())
                     processBankWork()
-//                    print(Date())
                 case 2:
                     isExit = true
                 default:
@@ -50,6 +50,15 @@ struct BankService {
         }
     }
     
+    mutating func getNextCustomer() -> Customer? {
+        return customerQueue.dequeue()
+    }
+    mutating func getNextCustomerNumber() -> Int {
+        let customerNumber = nextCustomer
+        nextCustomer += 1
+        return customerNumber
+    }
+    
     private func printMenu() {
         print(BankManagerNameSpace.openBank,
               BankManagerNameSpace.closeBank,
@@ -58,7 +67,7 @@ struct BankService {
               terminator: " ")
     }
     
-    private mutating func processBankWork() {
+    mutating func processBankWork() {
         let customerCount = customerQueue.count
         depositBankerQueue.maxConcurrentOperationCount = 2
         loanBankerQueue.maxConcurrentOperationCount = 1
@@ -88,8 +97,8 @@ struct BankService {
         }
     }
     
-    private mutating func generateCustomerQueue() {
-        for i in 1...Int.random(in: 10...numberOfCustomers) {
+    mutating func generateCustomerQueue() {
+        for i in 1...numberOfCustomers {
             guard let bankingOperation = BankingOperations.allCases.randomElement() else {
                 return
             }
@@ -97,9 +106,10 @@ struct BankService {
             let customer = Customer(waitingNumber: i, bankingWork: bankingOperation)
             customerQueue.enqueue(customer: customer)
         }
+        
     }
     
-    private mutating func bankingServiceStartTask(_ customer: Customer) -> BlockOperation {
+    mutating func bankingServiceStartTask(_ customer: Customer) -> BlockOperation {
         let startTask = BlockOperation {
             print(String(format: BankManagerNameSpace.startTaskMessage, arguments: ["\(customer.waitingNumber)", "\(customer.bankingWork.financialProductsName)"]))
             Thread.sleep(forTimeInterval: customer.bankingWork.duration)
@@ -115,7 +125,7 @@ struct BankService {
         return startTask
     }
     
-    private mutating func bankingServiceEndTask(_ customer: Customer, startTask: BlockOperation) {
+    mutating func bankingServiceEndTask(_ customer: Customer, startTask: BlockOperation) {
         let endTask = BlockOperation {
             print(String(format: BankManagerNameSpace.endTaskMessage, arguments: ["\(customer.waitingNumber)", "\(customer.bankingWork.financialProductsName)"]))
         }
@@ -130,6 +140,3 @@ struct BankService {
         bankingServiceTime += customer.bankingWork.duration
     }
 }
-
-
-//Date().timeIntervalSince(startTime)
