@@ -16,6 +16,7 @@
 | [**Hamg**](https://github.com/hemg2) | [**Kobe**](https://github.com/devKobe24) |
 
 ## 🗂️ 파일트리</br>
+
 ```
 .
 ├── BankManagerConsoleApp
@@ -78,8 +79,8 @@
 | 23.07.20.(목)     | BankService 객체내의 메서드 로직 수정 및 추가  |
 
 ## 📺 실행화면
-- JuiceMaker 실행 화면 </br>
-![](https://cdn.discordapp.com/attachments/767712487625719810/1131742446309613658/41c3490ff7926075.gif)
+- 실행 화면 </br>
+<img src= "https://github.com/devKobe24/images/blob/main/bankManagerStep3.gif?raw=true"></br>
 
 ## 🔨 트러블 슈팅 
 1️⃣ **대출,예금 업무 분리** </br>
