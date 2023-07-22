@@ -242,11 +242,7 @@ class ViewController: UIViewController {
             DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) {
                 customerLabel?.removeFromSuperview()
                 self.bankingInProgressCustomers.removeFirst()
-                if self.bankService.customerQueue.isEmpty && self.waitingCustomers.isEmpty {
-                    self.stopTimer()
-                } else {
-                    self.startBankingWork()
-                }
+                self.stopTimer()
             }
         }
     }
@@ -275,26 +271,29 @@ extension ViewController {
         timer = nil
         lastStartTime = nil
         isTimerRun = false
-     
     }
-    
-    @objc func timerReset() {
-        stopTimer()
-        totalTime = 0
-        timerLabel.text = "업무시간 - 00:00:000"
+    private func customerQueueReset() {
         bankService.customerQueue.clear()
         waitingCustomers.removeAll()
         bankingInProgressCustomers.removeAll()
     }
-
+    
+    @objc func timerReset() {
+        stopTimer()
+        customerQueueReset()
+        bankService.nextCustomer = 1
+        totalTime = 0
+        timerLabel.text = "업무시간 - 00:00:000"
+    }
+    
     @objc private func updateTimerLabel() {
         guard let lastStartTime = lastStartTime else {
             return
         }
-
+        
         let currentTime = Date()
         totalTime += currentTime.timeIntervalSince(lastStartTime)
-
+        
         let formatter = DateComponentsFormatter()
         formatter.unitsStyle = .positional
         formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
