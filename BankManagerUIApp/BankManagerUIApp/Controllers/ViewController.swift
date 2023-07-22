@@ -211,21 +211,8 @@ class ViewController: UIViewController {
         }
         customerLabelStackView.addArrangedSubview(newLabel)
     }
-    
-    private func addNewWorkLabel(customerName: String, loan: Bool) {
-        let newLabel = UILabel()
-        newLabel.text = customerName
-        newLabel.textColor = .black
-        newLabel.font = UIFont.systemFont(ofSize: 20)
-        newLabel.textAlignment = .center
-        newLabel.translatesAutoresizingMaskIntoConstraints = false
-        if loan {
-            newLabel.textColor = .systemPurple
-        }
-        bankingInProgressStackView.addArrangedSubview(newLabel)
-    }
-    
-    private func starBankingWork(_ customer: Customer) {
+        
+    private func starBankingWork() {
         guard let customer = bankService.customerQueue.dequeue() else { return }
         
         let customerNumber = bankService.getNextCustomerNumber()
@@ -243,10 +230,10 @@ class ViewController: UIViewController {
             self.customerLabelStackView.removeArrangedSubview(customerLabel!)
             self.bankingInProgressStackView.addArrangedSubview(customerLabel!)
             
+            //여기서 한번더해야지 사라짐
             DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) {
                 customerLabel?.removeFromSuperview()
                 self.bankingInProgressCustomers.removeFirst()
-                self.starBankingWork(customer)
             }
         }
     }
@@ -256,12 +243,8 @@ class ViewController: UIViewController {
         if bankService.processedCustomers.count < 11 {
             bankService.generateCustomerQueue()
         }
-        
         for _ in 1...10 {
-            guard let customer = bankService.customerQueue.dequeue() else {
-                break
-            }
-            starBankingWork(customer)
+            starBankingWork()
         }
     }
 }
