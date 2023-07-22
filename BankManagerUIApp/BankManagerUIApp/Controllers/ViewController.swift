@@ -113,6 +113,11 @@ class ViewController: UIViewController {
     private var waitingCustomers: [UILabel] = []
     private var bankingInProgressCustomers: [UILabel] = []
     
+    private var timer: Timer?
+    private var totalTime: TimeInterval = 0
+    private var lastStartTime: Date?
+    private var isTimerRun: Bool = false
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -124,6 +129,7 @@ class ViewController: UIViewController {
         customerLabelStackViewConstraint()
         bankingLabelStackViewConstraint()
         customerButton.addTarget(self, action: #selector(tapAddCustomerButton), for: .touchUpInside)
+        resetButton.addTarget(self, action: #selector(timerReset), for: .touchUpInside)
     }
     
     private func scrollUIConstraints() {
@@ -212,7 +218,7 @@ class ViewController: UIViewController {
         customerLabelStackView.addArrangedSubview(newLabel)
     }
         
-    private func starBankingWork() {
+    private func startBankingWork() {
         guard let customer = bankService.customerQueue.dequeue() else { return }
         
         let customerNumber = bankService.getNextCustomerNumber()
@@ -220,6 +226,8 @@ class ViewController: UIViewController {
         let isLoan = customer.bankingWork == .loan
         addNewLabel(customerName: customerInfo, loan: isLoan)
         waitingCustomers.append(customerLabelStackView.arrangedSubviews.last as! UILabel)
+        
+        startTimer()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) { [weak self] in
             guard let self = self else { return }
@@ -234,17 +242,64 @@ class ViewController: UIViewController {
             DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) {
                 customerLabel?.removeFromSuperview()
                 self.bankingInProgressCustomers.removeFirst()
+                if self.bankService.customerQueue.isEmpty && self.waitingCustomers.isEmpty {
+                    self.stopTimer()
+                } else {
+                    self.startBankingWork()
+                }
             }
         }
     }
-    
     
     @objc private func tapAddCustomerButton() {
         if bankService.processedCustomers.count < 11 {
             bankService.generateCustomerQueue()
         }
         for _ in 1...10 {
-            starBankingWork()
+            startBankingWork()
         }
+    }
+}
+
+
+extension ViewController {
+    private func startTimer() {
+        guard !isTimerRun else { return }
+        timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(updateTimerLabel), userInfo: nil, repeats: true)
+        lastStartTime = Date()
+        isTimerRun = true
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+        lastStartTime = nil
+        isTimerRun = false
+     
+    }
+    
+    @objc func timerReset() {
+        stopTimer()
+        totalTime = 0
+        timerLabel.text = "업무시간 - 00:00:000"
+        bankService.customerQueue.clear()
+        waitingCustomers.removeAll()
+        bankingInProgressCustomers.removeAll()
+    }
+
+    @objc private func updateTimerLabel() {
+        guard let lastStartTime = lastStartTime else {
+            return
+        }
+
+        let currentTime = Date()
+        totalTime += currentTime.timeIntervalSince(lastStartTime)
+
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .positional
+        formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
+        formatter.zeroFormattingBehavior = .pad
+        let formattedTime = formatter.string(from: totalTime) ?? "00:00:000"
+        timerLabel.text = "업무시간 - \(formattedTime)"
     }
 }
