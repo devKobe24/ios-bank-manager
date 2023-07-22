@@ -110,6 +110,9 @@ class ViewController: UIViewController {
     
     private var bankService = BankService(numberOfCustomers: 10)
     
+    private var waitingCustomers: [UILabel] = []
+    private var bankingInProgressCustomers: [UILabel] = []
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -222,8 +225,35 @@ class ViewController: UIViewController {
         bankingInProgressStackView.addArrangedSubview(newLabel)
     }
     
+    private func starBankingWork(_ customer: Customer) {
+        guard let customer = bankService.customerQueue.dequeue() else { return }
+        
+        let customerNumber = bankService.getNextCustomerNumber()
+        let customerInfo = "\(customerNumber) - \(customer.bankingWork.financialProductsName)"
+        let isLoan = customer.bankingWork == .loan
+        addNewLabel(customerName: customerInfo, loan: isLoan)
+        waitingCustomers.append(customerLabelStackView.arrangedSubviews.last as! UILabel)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) { [weak self] in
+            guard let self = self else { return }
+            
+            let customerLabel = self.waitingCustomers.first
+            self.waitingCustomers.removeFirst()
+            self.bankingInProgressCustomers.append(customerLabel!)
+            self.customerLabelStackView.removeArrangedSubview(customerLabel!)
+            self.bankingInProgressStackView.addArrangedSubview(customerLabel!)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) {
+                customerLabel?.removeFromSuperview()
+                self.bankingInProgressCustomers.removeFirst()
+                self.starBankingWork(customer)
+            }
+        }
+    }
+    
+    
     @objc private func tapAddCustomerButton() {
-        if bankService.processedCustomers.count <= 10 {
+        if bankService.processedCustomers.count < 11 {
             bankService.generateCustomerQueue()
         }
         
@@ -231,10 +261,7 @@ class ViewController: UIViewController {
             guard let customer = bankService.customerQueue.dequeue() else {
                 break
             }
-            let customerNumber = bankService.getNextCustomerNumber()
-            let customerInfo = "\(customerNumber) - \(customer.bankingWork.financialProductsName)"
-            let isLoan = customer.bankingWork == .loan
-            addNewLabel(customerName: customerInfo, loan: isLoan)
+            starBankingWork(customer)
         }
     }
 }
