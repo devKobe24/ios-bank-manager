@@ -58,7 +58,7 @@ class ViewController: UIViewController {
         label.textColor = UIColor.white
         label.font = UIFont.systemFont(ofSize: 30)
         label.textAlignment = .center
-        label.backgroundColor = .blue
+        label.backgroundColor = .systemIndigo
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -99,6 +99,15 @@ class ViewController: UIViewController {
         return stackView
     }()
     
+    private let bankingInProgressStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        stackView.distribution = .fillEqually
+        stackView.spacing = 5
+        return stackView
+    }()
+    
     private var bankService = BankService(numberOfCustomers: 10)
     
     override func viewDidLoad() {
@@ -110,6 +119,7 @@ class ViewController: UIViewController {
         timeLayout()
         workStackViewConstraint()
         customerLabelStackViewConstraint()
+        bankingLabelStackViewConstraint()
         customerButton.addTarget(self, action: #selector(tapAddCustomerButton), for: .touchUpInside)
     }
     
@@ -176,6 +186,16 @@ class ViewController: UIViewController {
         ])
     }
     
+    private func bankingLabelStackViewConstraint() {
+        containerView.addSubview(bankingInProgressStackView)
+        NSLayoutConstraint.activate([
+            bankingInProgressStackView.topAnchor.constraint(equalTo: labelStackView.bottomAnchor, constant: 5),
+            bankingInProgressStackView.leadingAnchor.constraint(equalTo: containerView.centerXAnchor),
+            bankingInProgressStackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            bankingInProgressStackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+    }
+    
     private func addNewLabel(customerName: String, loan: Bool) {
         let newLabel = UILabel()
         newLabel.text = customerName
@@ -184,9 +204,22 @@ class ViewController: UIViewController {
         newLabel.textAlignment = .center
         newLabel.translatesAutoresizingMaskIntoConstraints = false
         if loan {
-            newLabel.textColor = .blue
+            newLabel.textColor = .systemPurple
         }
         customerLabelStackView.addArrangedSubview(newLabel)
+    }
+    
+    private func addNewWorkLabel(customerName: String, loan: Bool) {
+        let newLabel = UILabel()
+        newLabel.text = customerName
+        newLabel.textColor = .black
+        newLabel.font = UIFont.systemFont(ofSize: 20)
+        newLabel.textAlignment = .center
+        newLabel.translatesAutoresizingMaskIntoConstraints = false
+        if loan {
+            newLabel.textColor = .systemPurple
+        }
+        bankingInProgressStackView.addArrangedSubview(newLabel)
     }
     
     @objc private func tapAddCustomerButton() {
@@ -204,8 +237,4 @@ class ViewController: UIViewController {
             addNewLabel(customerName: customerInfo, loan: isLoan)
         }
     }
-
 }
-
-
-
