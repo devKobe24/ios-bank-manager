@@ -115,8 +115,9 @@ class ViewController: UIViewController {
     
     private var timer: Timer?
     private var totalTime: TimeInterval = 0
-    private var lastStartTime: Date?
+    private var lastStartTime: Date = Date()
     private var isTimerRun: Bool = false
+    private let bankingQueue = OperationQueue()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -217,7 +218,7 @@ class ViewController: UIViewController {
         }
         customerLabelStackView.addArrangedSubview(newLabel)
     }
-        
+    
     private func startBankingWork() {
         guard let customer = bankService.customerQueue.dequeue() else { return }
         
@@ -228,26 +229,30 @@ class ViewController: UIViewController {
         waitingCustomers.append(customerLabelStackView.arrangedSubviews.last as! UILabel)
         
         startTimer()
+        let startTask = bankService.bankingServiceStartTask(customer)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) { [weak self] in
-            guard let self = self else { return }
-            
-            let customerLabel = self.waitingCustomers.first
-            self.waitingCustomers.removeFirst()
-            self.bankingInProgressCustomers.append(customerLabel!)
-            self.customerLabelStackView.removeArrangedSubview(customerLabel!)
-            self.bankingInProgressStackView.addArrangedSubview(customerLabel!)
-            
-            //여기서 한번더해야지 사라짐
-            DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) {
-                customerLabel?.removeFromSuperview()
-                self.bankingInProgressCustomers.removeFirst()
-                self.stopTimer()
+        bankingQueue.addOperation {
+            Thread.sleep(forTimeInterval: customer.bankingWork.duration)
+            DispatchQueue.main.async {
+                let customerLabel = self.waitingCustomers.first
+                self.waitingCustomers.removeFirst()
+                self.bankingInProgressCustomers.append(customerLabel!)
+                self.customerLabelStackView.removeArrangedSubview(customerLabel!)
+                self.bankingInProgressStackView.addArrangedSubview(customerLabel!)
+                self.bankService.bankingServiceEndTask(customer, startTask: startTask)
+                
+                //여기서 한번더해야지 사라짐
+                DispatchQueue.main.asyncAfter(deadline: .now() + customer.bankingWork.duration) {
+                    customerLabel?.removeFromSuperview()
+                    self.bankingInProgressCustomers.removeFirst()
+                    self.stopTimer()
+                }
             }
         }
     }
     
     @objc private func tapAddCustomerButton() {
+        guard bankService.customerQueue.count > 0 else { return }
         if bankService.processedCustomers.count < 11 {
             bankService.generateCustomerQueue()
         }
@@ -261,7 +266,7 @@ class ViewController: UIViewController {
 extension ViewController {
     private func startTimer() {
         guard !isTimerRun else { return }
-        timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(updateTimerLabel), userInfo: nil, repeats: true)
+        timer = Timer.scheduledTimer(timeInterval: 0.001, target: self, selector: #selector(updateTimerLabel), userInfo: nil, repeats: true)
         lastStartTime = Date()
         isTimerRun = true
     }
@@ -269,9 +274,9 @@ extension ViewController {
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
-        lastStartTime = nil
         isTimerRun = false
     }
+    
     private func customerQueueReset() {
         bankService.customerQueue.clear()
         waitingCustomers.removeAll()
@@ -287,18 +292,13 @@ extension ViewController {
     }
     
     @objc private func updateTimerLabel() {
-        guard let lastStartTime = lastStartTime else {
-            return
-        }
-        
         let currentTime = Date()
         totalTime += currentTime.timeIntervalSince(lastStartTime)
+        self.lastStartTime = currentTime
+        let milliseconds = Int(totalTime * 1000) % 1000
+        let minutes = (Int(totalTime) / 60) % 60
+        let seconds = Int(totalTime) % 60
         
-        let formatter = DateComponentsFormatter()
-        formatter.unitsStyle = .positional
-        formatter.allowedUnits = [.hour, .minute, .second, .nanosecond]
-        formatter.zeroFormattingBehavior = .pad
-        let formattedTime = formatter.string(from: totalTime) ?? "00:00:000"
-        timerLabel.text = "업무시간 - \(formattedTime)"
+        timerLabel.text = String(format: "업무시간 - %02d:%02d:%03d", minutes,seconds, milliseconds)
     }
 }
